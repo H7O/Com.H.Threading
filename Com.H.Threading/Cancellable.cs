@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace Com.H.Threading
 {
-    public static class CancellableExt
+    public static class Cancellable
     {
         public static Task<T> CancellableWait<T>(this Task<T> task,
             int? timeout = null,

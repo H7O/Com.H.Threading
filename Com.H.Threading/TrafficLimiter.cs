@@ -5,15 +5,15 @@ using System.Linq;
 
 namespace Com.H.Threading
 {
-    public static class ThreadManagementExt
+    public class TrafficLimiter
     {
         private class LockKey
         {
             public object Key { get; set; }
             public int Count { get; set; }
         }
-        private readonly static List<LockKey> locks = new List<LockKey>();
-        private readonly static object lockObj = new object();
+        private readonly List<LockKey> locks = new List<LockKey>();
+        private readonly object lockObj = new object();
 
         /// <summary>
         /// Controls the concurrent / multi-threaded calls to a single Action 
@@ -30,7 +30,7 @@ namespace Com.H.Threading
         /// otherwise this extension method would always default to allowing unlimited multi-threaded calls to 
         /// execute the Action if it couldn't identify its unique signature. </param>
         /// <param name="queueLength">Maximum queue length, default is 1 (i.e. only one call is allowed, any extra concurrent calls are ignored)</param>
-        public static void QueueCall(this Action action, int queueLength = 1, object key = null)
+        public void QueueCall(Action action, int queueLength = 1, object key = null)
         {
             if (key == null) key = action;
             LockKey lockKey = null;
@@ -53,7 +53,6 @@ namespace Com.H.Threading
                 locks.Remove(lockKey);
             }
         }
-        private static int lockCount = 0;
 
         /// <summary>
         /// Controls the concurrent / multi-threaded calls to a single Func 
@@ -74,7 +73,7 @@ namespace Com.H.Threading
         /// </param>
         /// <param name="queueLength"></param>
         /// <returns></returns>
-        public static T QueueCall<T>(Func<T> func,
+        public T QueueCall<T>(Func<T> func,
             T defaultValue = default,
             int queueLength = 1,
             object key = null
