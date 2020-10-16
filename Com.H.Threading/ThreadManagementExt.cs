@@ -57,7 +57,7 @@ namespace Com.H.Threading
 
         /// <summary>
         /// Controls the concurrent / multi-threaded calls to a single Func 
-        /// by queuing multi-threaded calls to it and
+        /// by queuing multi-threaded calls and
         /// bouncing off (not executing) extra calls that exceed its queue_length parameter
         /// </summary>
         /// <typeparam name="T">Result value of the the Func.</typeparam>
