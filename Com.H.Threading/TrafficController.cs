@@ -2,18 +2,15 @@
 using System.Collections.Generic;
 using System.Text;
 using System.Linq;
+using System.Threading;
 
 namespace Com.H.Threading
 {
-    public class TrafficLimiter
+    public class TrafficController
     {
-        private class LockKey
-        {
-            public object Key { get; set; }
-            public int Count { get; set; }
-        }
-        private readonly List<LockKey> locks = new List<LockKey>();
-        private readonly object lockObj = new object();
+        #region queue calls
+        private readonly List<LockKey> queueLocks = new List<LockKey>();
+        private readonly object queueLockObj = new object();
 
         /// <summary>
         /// Controls the concurrent / multi-threaded calls to a single Action 
@@ -34,9 +31,9 @@ namespace Com.H.Threading
         {
             if (key == null) key = action;
             LockKey lockKey = null;
-            lock (lockObj)
+            lock (queueLockObj)
             {
-                lockKey = locks.FirstOrDefault(x => x.Key.Equals(key));
+                lockKey = queueLocks.FirstOrDefault(x => x.Key.Equals(key));
 
                 if (lockKey != null && lockKey.Count > queueLength)
                     return;
@@ -48,9 +45,9 @@ namespace Com.H.Threading
             }
 
             action();
-            lock (lockObj)
+            lock (queueLockObj)
             {
-                locks.Remove(lockKey);
+                queueLocks.Remove(lockKey);
             }
         }
 
@@ -81,9 +78,9 @@ namespace Com.H.Threading
         {
             if (key == null) key = func;
             LockKey lockKey = null;
-            lock (lockObj)
+            lock (queueLockObj)
             {
-                lockKey = locks.FirstOrDefault(x => x.Key.Equals(key));
+                lockKey = queueLocks.FirstOrDefault(x => x.Key.Equals(key));
 
                 if (lockKey != null && lockKey.Count > queueLength)
                 {
@@ -93,16 +90,19 @@ namespace Com.H.Threading
                     lockKey = new LockKey() { Key = key, Count = 1 };
                 else
                     lockKey.Count++;
-
+                
             }
             T result = func();
-            lock (lockObj)
+            lock (queueLockObj)
             {
-                locks.Remove(lockKey);
+                queueLocks.Remove(lockKey);
                 return result;
             }
 
         }
+
+
+        #endregion
 
     }
 }
