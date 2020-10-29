@@ -31,22 +31,30 @@ namespace Com.H.Threading
         {
             CancellableRun(action, cts.Token);
         }
-
+        private static int action_count = 0;
         public static void CancellableRun(Action action, CancellationToken token)
         {
             try
             {
                 Task.Run(() =>
                 {
-                    using (var reg = token.Register(
-                        () =>
-                            { 
-                                try 
-                                { 
-                                    // hard exit support for older .net framework runtimes
-                                    Thread.CurrentThread.Abort(); 
-                                } catch { } 
-                            }))
+                    using (var reg = token.Register(() =>
+                    {
+                        try
+                        {
+                            // hard unsafe exit supported by older .net framework runtimes
+                            Thread.CurrentThread.Abort();
+                        }
+                        catch
+                        {
+                            try
+                            {
+                                Thread.CurrentThread.Interrupt();
+                            }
+                            catch { }
+
+                        }
+                    }))
                         try
                         {
                             action();
@@ -68,7 +76,7 @@ namespace Com.H.Threading
                             throw;
                         }
 
-                }, token).Wait(token);
+                }, token).GetAwaiter().GetResult();
             }
             catch (ObjectDisposedException)
             {
@@ -93,7 +101,7 @@ namespace Com.H.Threading
         {
             CancellableRunAsync(action, cts.Token);
         }
-
+        private static int async_action_count = 0;
         public static void CancellableRunAsync(Action action, CancellationToken token)
         {
             try
@@ -104,17 +112,25 @@ namespace Com.H.Threading
                     {
                         try
                         {
-                            // hard exit support for older .net framework runtimes
+                            // hard unsafe exit supported by older .net framework runtimes
                             Thread.CurrentThread.Abort();
                         }
-                        catch { }
+                        catch 
+                        {
+                            try
+                            {
+                                Thread.CurrentThread.Interrupt();
+                            }
+                            catch { }
+
+                        }
                     }))
 
                         try
-                        {
-                            action();
-                        }
-                        catch (ObjectDisposedException)
+                    {
+                        action();
+                    }
+                    catch (ObjectDisposedException)
                         {
                         }
                         catch (TaskCanceledException)
