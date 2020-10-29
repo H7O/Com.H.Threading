@@ -42,18 +42,16 @@ namespace Com.H.Threading
                     {
                         try
                         {
+                            Thread.CurrentThread.Interrupt();
+                        }
+                        catch { }
+
+                        try
+                        {
                             // hard unsafe exit supported by older .net framework runtimes
                             Thread.CurrentThread.Abort();
                         }
-                        catch
-                        {
-                            try
-                            {
-                                Thread.CurrentThread.Interrupt();
-                            }
-                            catch { }
-
-                        }
+                        catch { }
                     }))
                         try
                         {
@@ -112,17 +110,17 @@ namespace Com.H.Threading
                     {
                         try
                         {
+                            Thread.CurrentThread.Interrupt();
+                        }
+                        catch { }
+
+                        try
+                        {
                             // hard unsafe exit supported by older .net framework runtimes
                             Thread.CurrentThread.Abort();
                         }
                         catch 
                         {
-                            try
-                            {
-                                Thread.CurrentThread.Interrupt();
-                            }
-                            catch { }
-
                         }
                     }))
 
