@@ -22,7 +22,7 @@ namespace Com.H.Threading
         /// the unique signature of the Action to determine whether or not 
         /// another thread is currently executing it.
         /// However, when the Action has input variables that aren't final 
-        /// (e.g. SomeAction(5,2) <= final values, SomeAction(x,y) <= non final), 
+        /// (e.g. SomeAction(5,2) <= final values, SomeAction(x,y) <= non   final), 
         /// then a unique key is needed to identify the Action signature,
         /// otherwise this extension method would always default to allowing unlimited multi-threaded calls to 
         /// execute the Action if it couldn't identify its unique signature. </param>
