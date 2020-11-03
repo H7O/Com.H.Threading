@@ -15,7 +15,7 @@ namespace Com.H.Threading
         /// <summary>
         /// Controls the concurrent / multi-threaded calls to a single Action 
         /// by queuing multi-threaded calls and
-        /// bouncing off (not executing) extra calls that exceed its queueLength parameter
+        /// bouncing off (not executing) extra calls that exceed the queueLength
         /// </summary>
         /// <param name="action"></param>
         /// <param name="key">By default, this extension method could automatically tell 
@@ -54,7 +54,7 @@ namespace Com.H.Threading
         /// <summary>
         /// Controls the concurrent / multi-threaded calls to a single Func 
         /// by queuing multi-threaded calls and
-        /// bouncing off (not executing) extra calls that exceed its queue_length parameter
+        /// bouncing off (not executing) extra calls that exceed the queue_length
         /// </summary>
         /// <typeparam name="T">Result value of the the Func.</typeparam>
         /// <param name="func">The Func delegate to be called</param>
