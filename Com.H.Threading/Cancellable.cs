@@ -94,73 +94,57 @@ namespace Com.H.Threading
         }
 
 
-        public static void CancellableRunAsync(Action action, CancellationTokenSource cts)
+        public static Task CancellableRunAsync(Action action, CancellationTokenSource cts)
         {
-            CancellableRunAsync(action, cts.Token);
+            return CancellableRunAsync(action, cts.Token);
         }
-        public static void CancellableRunAsync(Action action, CancellationToken token)
+        public static Task CancellableRunAsync(Action action, CancellationToken token)
         {
-            try
+            var t = Task.Run(() =>
             {
-                Task.Run(() =>
+                using (var reg = token.Register(() =>
                 {
-                    using (var reg = token.Register(() =>
+                    try
                     {
-                        try
-                        {
-                            Thread.CurrentThread.Interrupt();
-                        }
-                        catch { }
+                        Thread.CurrentThread.Interrupt();
+                    }
+                    catch { }
 
-                        try
-                        {
-                            // hard exit supported by older .net framework runtimes
-                            Thread.CurrentThread.Abort();
-                        }
-                        catch 
-                        {
-                        }
-                    }))
+                    try
+                    {
+                        // hard exit supported by older .net framework runtimes
+                        Thread.CurrentThread.Abort();
+                    }
+                    catch
+                    {
+                    }
+                }))
 
-                        try
+                    try
                     {
                         action();
                     }
                     catch (ObjectDisposedException)
-                        {
-                        }
-                        catch (TaskCanceledException)
-                        {
-                        }
-                        catch (OperationCanceledException)
-                        {
-                        }
-                        catch (ThreadAbortException)
-                        {
-                        }
-                        catch
-                        {
-                            throw;
-                        }
+                    {
+                    }
+                    catch (TaskCanceledException)
+                    {
+                    }
+                    catch (OperationCanceledException)
+                    {
+                    }
+                    catch (ThreadAbortException)
+                    {
+                    }
+                    catch
+                    {
+                        throw;
+                    }
 
-                }, token).ConfigureAwait(false);
-            }
-            catch (ObjectDisposedException)
-            {
-            }
-            catch (TaskCanceledException)
-            {
-            }
-            catch (OperationCanceledException)
-            {
-            }
-            catch (ThreadAbortException)
-            {
-            }
-            catch
-            {
-                throw;
-            }
+            }, token);
+
+            t.ConfigureAwait(false);
+            return t;
         }
 
 
