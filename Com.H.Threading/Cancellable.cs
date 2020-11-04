@@ -31,7 +31,6 @@ namespace Com.H.Threading
         {
             CancellableRun(action, cts.Token);
         }
-        private static int action_count = 0;
         public static void CancellableRun(Action action, CancellationToken token)
         {
             try
@@ -99,7 +98,6 @@ namespace Com.H.Threading
         {
             CancellableRunAsync(action, cts.Token);
         }
-        private static int async_action_count = 0;
         public static void CancellableRunAsync(Action action, CancellationToken token)
         {
             try
@@ -116,7 +114,7 @@ namespace Com.H.Threading
 
                         try
                         {
-                            // hard unsafe exit supported by older .net framework runtimes
+                            // hard exit supported by older .net framework runtimes
                             Thread.CurrentThread.Abort();
                         }
                         catch 

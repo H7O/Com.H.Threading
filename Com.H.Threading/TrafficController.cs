@@ -3,14 +3,20 @@ using System.Collections.Generic;
 using System.Text;
 using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
+using System.Net.Http;
 
 namespace Com.H.Threading
 {
     public class TrafficController
     {
         #region queue calls
-        private readonly List<LockKey> queueLocks = new List<LockKey>();
-        private readonly object queueLockObj = new object();
+        private readonly Dictionary<object, LockKey> queueLocks;
+        private readonly object queueLockObj;
+
+        public TrafficController() =>
+            (this.queueLocks, this.queueLockObj) =
+            (new Dictionary<object, LockKey>(), new object());
 
         /// <summary>
         /// Controls the concurrent / multi-threaded calls to a single Action 
@@ -26,30 +32,82 @@ namespace Com.H.Threading
         /// then a unique key is needed to identify the Action signature,
         /// otherwise this extension method would always default to allowing unlimited multi-threaded calls to 
         /// execute the Action if it couldn't identify its unique signature. </param>
-        /// <param name="queueLength">Maximum queue length, default is 1 (i.e. only one call is allowed, any extra concurrent calls are ignored)</param>
-        public void QueueCall(Action action, int queueLength = 1, object key = null)
+        /// <param name="queueLength">Maximum queue length, default is 0 (i.e. no queue, only one call is allowed, any extra concurrent calls are ignored)</param>
+        public void QueueCall(Action action, int queueLength = 0, object key = null, string debug="")
         {
             if (key == null) key = action;
             LockKey lockKey = null;
             lock (queueLockObj)
             {
-                lockKey = queueLocks.FirstOrDefault(x => x.Key.Equals(key));
+                if (this.queueLocks.ContainsKey(key)) lockKey = this.queueLocks[key];
 
                 if (lockKey != null && lockKey.Count > queueLength)
                     return;
 
                 if (lockKey == null)
+                {
                     lockKey = new LockKey() { Key = key, Count = 1 };
+                    this.queueLocks[key] = lockKey;
+                }
+                else
+                    lockKey.Count++;
+            }
+            action();
+            lock (queueLockObj)
+                queueLocks.Remove(key);
+        }
+
+
+
+        /// <summary>
+        /// Controls the concurrent / multi-threaded calls to a single Action 
+        /// by queuing multi-threaded calls and
+        /// bouncing off (not executing) extra calls that exceed the queueLength value.
+        /// The action that gets executed is done asynchronously on this method.
+        /// </summary>
+        /// <param name="action"></param>
+        /// <param name="key">By default, this extension method could automatically tell 
+        /// the unique signature of the Action to determine whether or not 
+        /// another thread is currently executing it.
+        /// However, when the Action has input variables that aren't final 
+        /// (e.g. SomeAction(5,2) <= final values, SomeAction(x,y) <= non   final), 
+        /// then a unique key is needed to identify the Action signature,
+        /// otherwise this extension method would always default to allowing unlimited multi-threaded calls to 
+        /// execute the Action if it couldn't identify its unique signature. </param>
+        /// <param name="queueLength">Maximum queue length, default is 0 (i.e. no queue, only one call is allowed, any extra concurrent calls are ignored)</param>
+        public void QueueCallAsync(Action action, int queueLength = 0, object key = null, string debug = "")
+        {
+            if (key == null) key = action;
+            LockKey lockKey = null;
+            lock (queueLockObj)
+            {
+                if (this.queueLocks.ContainsKey(key)) lockKey = this.queueLocks[key];
+
+                if (lockKey != null && lockKey.Count > queueLength)
+                    return;
+
+                if (lockKey == null)
+                {
+                    lockKey = new LockKey() { Key = key, Count = 1 };
+                    this.queueLocks[key] = lockKey;
+                }
                 else
                     lockKey.Count++;
             }
 
-            action();
-            lock (queueLockObj)
+            Action a = () =>
             {
-                queueLocks.Remove(lockKey);
-            }
+                lock (queueLockObj)
+                    queueLocks.Remove(key);
+            };
+            
+            Task.Run(()=>action()).ContinueWith((t)=>
+            {
+                lock (queueLockObj)
+                    queueLocks.Remove(key);
+            });
         }
+
 
         /// <summary>
         /// Controls the concurrent / multi-threaded calls to a single Func 
@@ -68,11 +126,11 @@ namespace Com.H.Threading
         /// as otherwise this extension method would always default to allowing unlimited multi-threaded calls to 
         /// execute the Func if it couldn't identify its unique signature. 
         /// </param>
-        /// <param name="queueLength"></param>
-        /// <returns></returns>
+        /// <param name="queueLength">Maximum queue length, default is 0 (i.e. no queue, only one call is allowed, any extra concurrent calls are ignored)</param>
+        /// <returns>T</returns>
         public T QueueCall<T>(Func<T> func,
             T defaultValue = default,
-            int queueLength = 1,
+            int queueLength = 0,
             object key = null
             )
         {
@@ -80,14 +138,16 @@ namespace Com.H.Threading
             LockKey lockKey = null;
             lock (queueLockObj)
             {
-                lockKey = queueLocks.FirstOrDefault(x => x.Key.Equals(key));
+                if (this.queueLocks.ContainsKey(key)) lockKey = this.queueLocks[key];
 
                 if (lockKey != null && lockKey.Count > queueLength)
-                {
                     return defaultValue;
-                }
+
                 if (lockKey == null)
+                {
                     lockKey = new LockKey() { Key = key, Count = 1 };
+                    this.queueLocks[key] = lockKey;
+                }
                 else
                     lockKey.Count++;
                 
@@ -95,9 +155,65 @@ namespace Com.H.Threading
             T result = func();
             lock (queueLockObj)
             {
-                queueLocks.Remove(lockKey);
+                queueLocks.Remove(key);
                 return result;
             }
+
+        }
+
+        /// <summary>
+        /// Controls the concurrent / multi-threaded calls to a single Func 
+        /// by queuing multi-threaded calls and
+        /// bouncing off (not executing) extra calls that exceed the queueLength value.
+        /// The func that gets executed is done asynchronously on this method.
+        /// </summary>
+        /// <typeparam name="T">Result value of the the Func.</typeparam>
+        /// <param name="func">The Func delegate to be called</param>
+        /// <param name="defaultValue">Default value of T that gets returned in the event of a calls is bounced off the queue</param>
+        /// <param name="key">By default, this extension method could automatically tell 
+        /// the unique signature of the Func to determine whether or not 
+        /// another thread is currently executing it.
+        /// However, when the Func has input variable that aren't final 
+        /// (e.g. SomeFunc(5,2) <= final values, SomeFunc(x,y) <= non final), 
+        /// then a unique key is needed to identify the Func signature,
+        /// as otherwise this extension method would always default to allowing unlimited multi-threaded calls to 
+        /// execute the Func if it couldn't identify its unique signature. 
+        /// </param>
+        /// <param name="queueLength">Maximum queue length, default is 0 (i.e. no queue, only one call is allowed, any extra concurrent calls are ignored)</param>
+        /// <returns>T</returns>
+        public Task<T> QueueCallAsync<T>(Func<T> func,
+            T defaultValue = default,
+            int queueLength = 0,
+            object key = null
+            )
+        {
+            if (key == null) key = func;
+            LockKey lockKey = null;
+            lock (queueLockObj)
+            {
+                if (this.queueLocks.ContainsKey(key)) lockKey = this.queueLocks[key];
+
+                if (lockKey != null && lockKey.Count > queueLength)
+                    return Task.FromResult(defaultValue);
+
+                if (lockKey == null)
+                {
+                    lockKey = new LockKey() { Key = key, Count = 1 };
+                    this.queueLocks[key] = lockKey;
+                }
+                else
+                    lockKey.Count++;
+            }
+            var result = Task.FromResult<T>(func());
+            result.ContinueWith((t) =>
+                {
+                    lock (queueLockObj)
+                    {
+                        queueLocks.Remove(key);
+                    }
+                });
+
+            return result;
 
         }
 
