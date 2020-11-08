@@ -1,2 +1,3 @@
 # Com.H.Threading
-API to help solve general problems faced when writing multi-threaded logic
+Simplifies controlling certain race conditions in concurrency-heavy applications. Helpful in solving general problems faced when writing multi-threaded logic
+

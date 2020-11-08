@@ -1,15 +1,16 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
     <Description>Simplifies controlling certain race conditions in concurrency-heavy applications.</Description>
-    <Copyright>Hussein Al Bayati (hussein@albayati.com)</Copyright>
-    <PackageLicenseExpression>https://licenses.nuget.org/MIT</PackageLicenseExpression>
+    <Copyright>Hussein Al Bayati</Copyright>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageProjectUrl>https://github.com/H7O/Com.H.Threading</PackageProjectUrl>
     <RepositoryUrl>https://github.com/H7O/Com.H.Threading</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PackageTags>multi-threading, concurrency</PackageTags>
     <PackageReleaseNotes>initial release</PackageReleaseNotes>
+    <Authors>Hussein Al Bayati</Authors>
   </PropertyGroup>
 
 </Project>
