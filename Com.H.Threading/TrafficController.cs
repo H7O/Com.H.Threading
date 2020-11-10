@@ -24,17 +24,18 @@ namespace Com.H.Threading
         /// bouncing off (not executing) extra calls that exceed the queueLength
         /// </summary>
         /// <param name="action"></param>
-        /// <param name="key">By default, this extension method could automatically tell 
+        /// <param name="key">By default, this method could automatically tell 
         /// the unique signature of the Action to determine whether or not 
         /// another thread is currently executing it.
         /// However, when the Action has input variables that aren't final 
         /// (e.g. SomeAction(5,2) <= final values, SomeAction(x,y) <= non   final), 
         /// then a unique key is needed to identify the Action signature,
-        /// otherwise this extension method would always default to allowing unlimited multi-threaded calls to 
-        /// execute the Action if it couldn't identify its unique signature. </param>
+        /// otherwise this method would always default to allowing unlimited multi-threaded calls to 
+        /// execute the Action if it couldn't identify its unique signature (e.g. any unique string can be used here). </param>
         /// <param name="queueLength">Maximum queue length, default is 0 (i.e. no queue, only one call is allowed, any extra concurrent calls are ignored)</param>
-        public void QueueCall(Action action, int queueLength = 0, object key = null, string debug="")
+        public void QueueCall(Action action, int queueLength = 0, object key = null)
         {
+            if (action == null) throw new ArgumentNullException(nameof(action));
             if (key == null) key = action;
             LockKey lockKey = null;
             lock (queueLockObj)
@@ -66,16 +67,16 @@ namespace Com.H.Threading
         /// The action that gets executed is done asynchronously on this method.
         /// </summary>
         /// <param name="action"></param>
-        /// <param name="key">By default, this extension method could automatically tell 
+        /// <param name="key">By default, this method could automatically tell 
         /// the unique signature of the Action to determine whether or not 
         /// another thread is currently executing it.
         /// However, when the Action has input variables that aren't final 
         /// (e.g. SomeAction(5,2) <= final values, SomeAction(x,y) <= non   final), 
         /// then a unique key is needed to identify the Action signature,
-        /// otherwise this extension method would always default to allowing unlimited multi-threaded calls to 
+        /// otherwise this method would always default to allowing unlimited multi-threaded calls to 
         /// execute the Action if it couldn't identify its unique signature. </param>
         /// <param name="queueLength">Maximum queue length, default is 0 (i.e. no queue, only one call is allowed, any extra concurrent calls are ignored)</param>
-        public void QueueCallAsync(Action action, int queueLength = 0, object key = null, string debug = "")
+        public Task QueueCallAsync(Action action, int queueLength = 0, object key = null)
         {
             if (key == null) key = action;
             LockKey lockKey = null;
@@ -84,7 +85,7 @@ namespace Com.H.Threading
                 if (this.queueLocks.ContainsKey(key)) lockKey = this.queueLocks[key];
 
                 if (lockKey != null && lockKey.Count > queueLength)
-                    return;
+                    return Task.CompletedTask;
 
                 if (lockKey == null)
                 {
@@ -95,17 +96,11 @@ namespace Com.H.Threading
                     lockKey.Count++;
             }
 
-            Action a = () =>
+            return Task.Run(()=>action()).ContinueWith((_)=>
             {
                 lock (queueLockObj)
                     queueLocks.Remove(key);
-            };
-            
-            Task.Run(()=>action()).ContinueWith((t)=>
-            {
-                lock (queueLockObj)
-                    queueLocks.Remove(key);
-            });
+            },TaskScheduler.Default);
         }
 
 
@@ -117,13 +112,13 @@ namespace Com.H.Threading
         /// <typeparam name="T">Result value of the the Func.</typeparam>
         /// <param name="func">The Func delegate to be called</param>
         /// <param name="defaultValue">Default value of T that gets returned in the event of a calls is bounced off the queue</param>
-        /// <param name="key">By default, this extension method could automatically tell 
+        /// <param name="key">By default, this method could automatically tell 
         /// the unique signature of the Func to determine whether or not 
         /// another thread is currently executing it.
         /// However, when the Func has input variable that aren't final 
         /// (e.g. SomeFunc(5,2) <= final values, SomeFunc(x,y) <= non final), 
         /// then a unique key is needed to identify the Func signature,
-        /// as otherwise this extension method would always default to allowing unlimited multi-threaded calls to 
+        /// as otherwise this method would always default to allowing unlimited multi-threaded calls to 
         /// execute the Func if it couldn't identify its unique signature. 
         /// </param>
         /// <param name="queueLength">Maximum queue length, default is 0 (i.e. no queue, only one call is allowed, any extra concurrent calls are ignored)</param>
@@ -134,6 +129,7 @@ namespace Com.H.Threading
             object key = null
             )
         {
+            if (func == null) return defaultValue;
             if (key == null) key = func;
             LockKey lockKey = null;
             lock (queueLockObj)
@@ -170,13 +166,13 @@ namespace Com.H.Threading
         /// <typeparam name="T">Result value of the the Func.</typeparam>
         /// <param name="func">The Func delegate to be called</param>
         /// <param name="defaultValue">Default value of T that gets returned in the event of a calls is bounced off the queue</param>
-        /// <param name="key">By default, this extension method could automatically tell 
+        /// <param name="key">By default, this method could automatically tell 
         /// the unique signature of the Func to determine whether or not 
         /// another thread is currently executing it.
         /// However, when the Func has input variable that aren't final 
         /// (e.g. SomeFunc(5,2) <= final values, SomeFunc(x,y) <= non final), 
         /// then a unique key is needed to identify the Func signature,
-        /// as otherwise this extension method would always default to allowing unlimited multi-threaded calls to 
+        /// as otherwise this method would always default to allowing unlimited multi-threaded calls to 
         /// execute the Func if it couldn't identify its unique signature. 
         /// </param>
         /// <param name="queueLength">Maximum queue length, default is 0 (i.e. no queue, only one call is allowed, any extra concurrent calls are ignored)</param>
@@ -187,6 +183,7 @@ namespace Com.H.Threading
             object key = null
             )
         {
+            if (func == null) return Task.FromResult(defaultValue);
             if (key == null) key = func;
             LockKey lockKey = null;
             lock (queueLockObj)
@@ -204,14 +201,15 @@ namespace Com.H.Threading
                 else
                     lockKey.Count++;
             }
-            var result = Task.FromResult<T>(func());
-            result.ContinueWith((t) =>
+            var result = Task.Run<T>(() => func());
+            result.ConfigureAwait(false);
+            result?.ContinueWith((_) =>
                 {
                     lock (queueLockObj)
                     {
                         queueLocks.Remove(key);
                     }
-                });
+                }, TaskScheduler.Default);
 
             return result;
 
