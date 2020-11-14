@@ -41,7 +41,6 @@ namespace Com.H.Threading
             this.CachedItems = new ConcurrentDictionary<object, ICachedRunItem>();
             this.DefaultCacheUntil = DateTime.Today.AddDays(1);
             this.RWLock = new ReaderWriterLockSlim(LockRecursionPolicy.SupportsRecursion);
-            // this.CacheCleanupLock = new object();
             this.CleanupSwitch = new AtomicGate();
         }
 
