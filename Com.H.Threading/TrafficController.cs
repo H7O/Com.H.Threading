@@ -96,7 +96,7 @@ namespace Com.H.Threading
                     lockKey.Count++;
             }
 
-            return Task.Run(()=>action()).ContinueWith((_)=>
+            return Task.Run(()=>action()).ContinueWith(_=>
             {
                 lock (queueLockObj)
                     queueLocks.Remove(key);
