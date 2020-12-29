@@ -30,7 +30,7 @@ namespace Com.H.Threading
             Action actionOnTimeout = null
             )
         {
-            timeout = timeout ?? -1;
+            timeout ??= -1;
             var delayTask = token == null ?
                 Task.Delay((int)timeout) :
                 Task.Delay((int)timeout, (CancellationToken)token);
@@ -44,7 +44,6 @@ namespace Com.H.Threading
         public static void CancellableRun(Action action, CancellationToken token)
         {
             if (action == null) throw new ArgumentNullException(nameof(action));
-            if (token == null) throw new ArgumentNullException(nameof(token));
             try
             {
                 Task.Run(() =>
@@ -57,13 +56,13 @@ namespace Com.H.Threading
                         }
                         catch { }
 
-                        try
-                        {
-                            // hard unsafe exit supported by older .net framework runtimes
-                            if (EnableThreadAbort)
-                                Thread.CurrentThread.Abort();
-                        }
-                        catch { }
+                        //try
+                        //{
+                        //    // hard unsafe exit supported by older .net framework runtimes
+                        //    if (EnableThreadAbort)
+                        //        Thread.CurrentThread.Abort();
+                        //}
+                        //catch { }
                     }))
                     action();
                 }, token).GetAwaiter().GetResult();
@@ -89,7 +88,6 @@ namespace Com.H.Threading
         public static T CancellableRun<T>(Func<T> func, CancellationToken token)
         {
             if (func == null) throw new ArgumentNullException(nameof(func));
-            if (token == null) throw new ArgumentNullException(nameof(token));
             try
             {
                 return Task.Run<T>(() =>
@@ -102,15 +100,17 @@ namespace Com.H.Threading
                         }
                         catch { }
 
-                        try
-                        {
-                            // hard unsafe exit supported by older .net framework runtimes
-                            if (EnableThreadAbort)
-                                Thread.CurrentThread.Abort();
-                        }
-                        catch { }
+                        //try
+                        //{
+                        //    // hard unsafe exit supported by older .net framework runtimes
+                        //    if (EnableThreadAbort)
+                        //        Thread.CurrentThread.Abort();
+                        //}
+                        //catch { }
                     }))
+                    {
                         return func();
+                    }
 
                 }, token).GetAwaiter().GetResult();
             }
@@ -131,12 +131,11 @@ namespace Com.H.Threading
                 throw;
             }
 
-            return default(T);
+            return default;
         }
         public static Task CancellableRunAsync(Action action, CancellationToken token)
         {
             if (action == null) throw new ArgumentNullException(nameof(action));
-            if (token == null) throw new ArgumentNullException(nameof(token));
             var t = new Task(() =>
             {
                 using (var reg = token.Register(() =>
@@ -147,13 +146,13 @@ namespace Com.H.Threading
                     }
                     catch { }
 
-                    try
-                    {
-                        // hard exit supported by older .net framework runtimes
-                        if (EnableThreadAbort)
-                            Thread.CurrentThread.Abort();
-                    }
-                    catch{}
+                    //try
+                    //{
+                    //    // hard exit supported by older .net framework runtimes
+                    //    if (EnableThreadAbort)
+                    //        Thread.CurrentThread.Abort();
+                    //}
+                    //catch{}
                 }))
 
                     try
@@ -187,7 +186,6 @@ namespace Com.H.Threading
         public static Task<T> CancellableRunAsync<T>(Func<T> func, CancellationToken token)
         {
             if (func == null) throw new ArgumentNullException(nameof(func));
-            if (token == null) throw new ArgumentNullException(nameof(token));
             var t = new Task<T>(() =>
             {
                 using (var reg = token.Register(() =>
@@ -198,13 +196,13 @@ namespace Com.H.Threading
                     }
                     catch { }
 
-                    try
-                    {
-                        // hard exit supported by older .net framework runtimes
-                        if (EnableThreadAbort)
-                            Thread.CurrentThread.Abort();
-                    }
-                    catch{}
+                    //try
+                    //{
+                    //    // hard exit supported by older .net framework runtimes
+                    //    if (EnableThreadAbort)
+                    //        Thread.CurrentThread.Abort();
+                    //}
+                    //catch{}
                 }))
 
                     try
@@ -227,7 +225,7 @@ namespace Com.H.Threading
                     {
                         throw;
                     }
-                return default(T);
+                return default;
 
             }, token);
 

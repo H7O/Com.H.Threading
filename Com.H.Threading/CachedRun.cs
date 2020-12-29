@@ -28,7 +28,6 @@ namespace Com.H.Threading
         public DateTime? DefaultCacheUntil { get; set; }
         private ReaderWriterLockSlim RWLock { get; set; }
         private CancellationTokenSource Cts { get; set; }
-        private object CacheCleanupLock { get; set; }
         private AtomicGate CleanupSwitch { get; set; }
         private bool disposedValue;
         private ConcurrentDictionary<object, ICachedRunItem> CachedItems { get; set; }
@@ -97,7 +96,7 @@ namespace Com.H.Threading
             {
                 this.RWLock.ExitWriteLock();
             }
-            if (item == null) return default(T);
+            if (item == null) return default;
             return ((CachedRunItem<T>)item).Value;
         }
 
