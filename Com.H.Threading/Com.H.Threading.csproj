@@ -12,9 +12,10 @@
     <PackageReleaseNotes>initial release</PackageReleaseNotes>
     <Authors>Hussein Al Bayati</Authors>
     <Version>1.0.3</Version>
-    <AssemblyVersion>1.0.2.0</AssemblyVersion>
-    <FileVersion>1.0.2.0</FileVersion>
+    <AssemblyVersion>1.0.3.0</AssemblyVersion>
+    <FileVersion>1.0.3.0</FileVersion>
     <NeutralLanguage></NeutralLanguage>
+    <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
   </PropertyGroup>
 
 </Project>
